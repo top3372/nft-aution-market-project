@@ -24,9 +24,16 @@ profile.cov
 go.work
 go.work.sum
 
+# Node / Hardhat
+node_modules/
+artifacts/
+cache/
+coverage/
+
 # env file
 .env
 
 # Editor/IDE
 # .idea/
 # .vscode/
+nft-hardhat3-project/.env.example

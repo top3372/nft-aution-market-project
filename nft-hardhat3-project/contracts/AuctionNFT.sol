@@ -27,6 +27,9 @@ contract AuctionNFT is ERC721URIStorage, Ownable {
   ) ERC721(name_, symbol_) Ownable(initialOwner) {}
 
   /// @notice 铸造一个 NFT，并设置对应的元数据 URI。
+  /// @dev
+  /// 前端创建拍卖前会调用该方法生成测试 NFT。由于该方法受 onlyOwner 保护，
+  /// 普通卖家钱包不能随意增发 NFT；生产环境可按业务需要改成白名单或公开 mint。
   /// @param to NFT 接收人。
   /// @param uri tokenURI，通常是 IPFS/HTTPS 元数据地址。
   /// @return tokenId 本次铸造出的 tokenId。
@@ -34,9 +37,11 @@ contract AuctionNFT is ERC721URIStorage, Ownable {
     address to,
     string calldata uri
   ) external onlyOwner returns (uint256 tokenId) {
+    // 先读取当前 nextTokenId 作为本次 tokenId，再自增，保证 tokenId 从 0 连续递增。
     tokenId = nextTokenId;
     nextTokenId++;
 
+    // _safeMint 会检查接收方是否能接收 ERC721；_setTokenURI 保存元数据地址。
     _safeMint(to, tokenId);
     _setTokenURI(tokenId, uri);
   }

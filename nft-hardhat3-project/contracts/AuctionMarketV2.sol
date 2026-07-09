@@ -25,8 +25,12 @@ contract AuctionMarketV2 is AuctionMarket {
   /// @notice 平台手续费费率，单位是 basis points，100 = 1%。
   uint16 public platformFeeBps;
 
+  /// @notice 平台手续费配置更新事件。
+  /// @dev 后端可以把该事件作为审计日志，判断某笔成交为什么按某个费率结算。
   event FeeConfigUpdated(address indexed feeRecipient, uint16 platformFeeBps);
 
+  /// @notice 带手续费的拍卖结算事件。
+  /// @dev 同时保留 gross、fee、sellerNet，便于后续做成交额和平台收入报表。
   event AuctionSettledWithFees(
     uint256 indexed auctionId,
     address indexed seller,
@@ -39,7 +43,7 @@ contract AuctionMarketV2 is AuctionMarket {
 
   error InvalidFeeBps();
 
-  function version() external pure returns (string memory) {
+  function version() external pure virtual returns (string memory) {
     return "2.0.0";
   }
 
@@ -57,6 +61,7 @@ contract AuctionMarketV2 is AuctionMarket {
     feeRecipient = newFeeRecipient;
     platformFeeBps = newPlatformFeeBps;
 
+    // feeRecipient 可以为 address(0)，业务含义是结算时动态使用当前 owner()。
     emit FeeConfigUpdated(newFeeRecipient, newPlatformFeeBps);
   }
 
@@ -78,7 +83,12 @@ contract AuctionMarketV2 is AuctionMarket {
   /// - 有人出价时，NFT 给最高价者。
   /// - 成交金额先拆成 feeAmount 和 sellerNetAmount。
   /// - sellerNetAmount 支付给卖家，feeAmount 支付给 feeRecipient。
-  function endAuction(uint256 auctionId) external override {
+  function endAuction(uint256 auctionId) external virtual override {
+    _endAuctionWithV2Fees(auctionId);
+  }
+
+  /// @dev V3 会复用这段手续费结算逻辑；这里不增加新状态，只抽出继承 hook。
+  function _endAuctionWithV2Fees(uint256 auctionId) internal {
     Auction storage auction = _v2AuctionOf(auctionId);
 
     if (auction.ended) {
@@ -102,6 +112,7 @@ contract AuctionMarketV2 is AuctionMarket {
       auction.highestBid
     );
 
+    // 结算顺序：先转 NFT，再支付卖家和平台手续费。任一步失败都会回滚整个结算。
     _transferAuctionNft(auction, auction.highestBidder);
     _payoutV2(auction.paymentToken, auction.seller, sellerNetAmount);
 
@@ -127,7 +138,7 @@ contract AuctionMarketV2 is AuctionMarket {
   }
 
   /// @dev 读取拍卖并保持与 V1 相同的 ID 边界检查语义。
-  function _v2AuctionOf(uint256 auctionId) private view returns (Auction storage) {
+  function _v2AuctionOf(uint256 auctionId) internal view returns (Auction storage) {
     if (auctionId >= auctions.length) {
       revert AuctionDoesNotExist();
     }
@@ -135,7 +146,7 @@ contract AuctionMarketV2 is AuctionMarket {
   }
 
   /// @dev 未显式配置手续费接收人时，使用 owner，避免手续费被发送到 address(0)。
-  function _effectiveFeeRecipient() private view returns (address) {
+  function _effectiveFeeRecipient() internal view returns (address) {
     if (feeRecipient == address(0)) {
       return owner();
     }
@@ -143,12 +154,12 @@ contract AuctionMarketV2 is AuctionMarket {
   }
 
   /// @dev 统一转移被市场托管的 NFT，避免结算分支重复写 safeTransferFrom。
-  function _transferAuctionNft(Auction storage auction, address to) private {
+  function _transferAuctionNft(Auction storage auction, address to) internal {
     IERC721(auction.nft).safeTransferFrom(address(this), to, auction.tokenId);
   }
 
   /// @dev 根据支付资产类型发送 ETH 或 ERC20；address(0) 表示 ETH。
-  function _payoutV2(address token, address to, uint256 amount) private {
+  function _payoutV2(address token, address to, uint256 amount) internal {
     if (amount == 0) {
       return;
     }

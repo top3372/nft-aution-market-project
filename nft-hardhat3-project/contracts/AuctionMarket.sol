@@ -83,12 +83,16 @@ contract AuctionMarket is
     uint8 tokenDecimals,
     bool enabled
   );
+  /// @notice 旧版创建拍卖事件。
+  /// @dev V3 仍会同步发出该事件，便于旧 indexer 或历史工具继续识别新拍卖。
   event AuctionCreated(
     uint256 indexed auctionId,
     address indexed seller,
     address indexed nft,
     uint256 tokenId
   );
+  /// @notice 出价成功事件。
+  /// @dev 后端 indexer 依赖该事件写入 bids 表，并刷新 auctions 当前最高价。
   event BidPlaced(
     uint256 indexed auctionId,
     address indexed bidder,
@@ -96,6 +100,8 @@ contract AuctionMarket is
     uint256 amount,
     uint256 amountUsd
   );
+  /// @notice 拍卖结束事件。
+  /// @dev winner 为 address(0) 且 amount 为 0 表示无人出价，NFT 已退回卖家。
   event AuctionEnded(
     uint256 indexed auctionId,
     address indexed winner,
@@ -165,7 +171,7 @@ contract AuctionMarket is
     address nft,
     uint256 tokenId,
     uint64 duration
-  ) external returns (uint256 auctionId) {
+  ) external virtual returns (uint256 auctionId) {
     if (nft == address(0)) {
       revert InvalidAddress();
     }
@@ -173,6 +179,7 @@ contract AuctionMarket is
       revert InvalidDuration();
     }
 
+    // auctionId 使用数组下标，天然递增且方便前端/后端按 ID 查询。
     auctionId = auctions.length;
     auctions.push(
       Auction({
@@ -188,6 +195,7 @@ contract AuctionMarket is
       })
     );
 
+    // 创建拍卖必须先把 NFT 托管到市场合约，否则卖家可以在拍卖期间把 NFT 转走。
     IERC721(nft).safeTransferFrom(msg.sender, address(this), tokenId);
 
     emit AuctionCreated(auctionId, msg.sender, nft, tokenId);
@@ -195,7 +203,7 @@ contract AuctionMarket is
 
   /// @notice 使用 ETH 对某个拍卖出价。
   /// @param auctionId 拍卖 ID。
-  function bidWithEth(uint256 auctionId) external payable {
+  function bidWithEth(uint256 auctionId) external payable virtual {
     if (msg.value == 0) {
       revert InvalidAmount();
     }
@@ -211,7 +219,7 @@ contract AuctionMarket is
     uint256 auctionId,
     address token,
     uint256 amount
-  ) external payable {
+  ) external payable virtual {
     if (msg.value != 0) {
       revert IncorrectEthValue();
     }
@@ -222,6 +230,8 @@ contract AuctionMarket is
       revert InvalidAmount();
     }
 
+    // ERC20 出价先把 token 转入市场合约，再统一进入 _placeBid 做价格比较。
+    // 如果后续价格比较失败，revert 会回滚本次 transferFrom，不会把低价出价留在合约里。
     IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     _placeBid(auctionId, token, amount);
   }
@@ -241,6 +251,7 @@ contract AuctionMarket is
     auction.ended = true;
 
     if (auction.highestBidder == address(0)) {
+      // 没有任何有效出价时，结算只需要把托管 NFT 退回卖家。
       IERC721(auction.nft).safeTransferFrom(
         address(this),
         auction.seller,
@@ -251,6 +262,7 @@ contract AuctionMarket is
       return;
     }
 
+    // 有最高出价时，NFT 给买家，资金给卖家。V2/V3 会重写结算加入手续费。
     IERC721(auction.nft).safeTransferFrom(
       address(this),
       auction.highestBidder,
@@ -303,7 +315,7 @@ contract AuctionMarket is
     uint256 auctionId,
     address token,
     uint256 amount
-  ) private {
+  ) internal virtual {
     Auction storage auction = _auctionOf(auctionId);
 
     if (auction.ended) {
@@ -315,10 +327,12 @@ contract AuctionMarket is
 
     uint256 amountUsd = quoteBidUsd(token, amount);
     if (amountUsd <= auction.highestBidUsd) {
+      // 新出价必须严格高于当前最高 USD 价值。低价出价走 refund，再 revert 回滚本次状态。
       _refund(token, msg.sender, amount);
       revert BidTooLow();
     }
 
+    // 先缓存旧最高价信息，更新新最高价后再退款，避免退款外部调用影响状态一致性。
     address previousBidder = auction.highestBidder;
     address previousPaymentToken = auction.paymentToken;
     uint256 previousBid = auction.highestBid;
@@ -344,7 +358,7 @@ contract AuctionMarket is
   }
 
   /// @dev 根据支付资产类型发送 ETH 或 ERC20。
-  function _payout(address token, address to, uint256 amount) private {
+  function _payout(address token, address to, uint256 amount) internal {
     if (token == NATIVE_TOKEN) {
       (bool ok, ) = payable(to).call{value: amount}("");
       require(ok, "ETH transfer failed");
@@ -354,7 +368,8 @@ contract AuctionMarket is
   }
 
   /// @dev 读取拍卖并统一做 ID 边界检查。
-  function _auctionOf(uint256 auctionId) private view returns (Auction storage) {
+  /// @dev 作为 internal hook 暴露给后续升级版本复用，不能改变 Auction 存储布局。
+  function _auctionOf(uint256 auctionId) internal view returns (Auction storage) {
     if (auctionId >= auctions.length) {
       revert AuctionDoesNotExist();
     }

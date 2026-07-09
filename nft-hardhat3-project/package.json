@@ -13,7 +13,9 @@
     "deploy:anvil": "hardhat --network anvil ignition deploy --deployment-id anvil-local ignition/modules/AuctionMarket.ts",
     "deploy:sepolia": "hardhat --network sepolia ignition deploy --deployment-id sepolia ignition/modules/AuctionMarket.ts",
     "deploy:mainnet": "hardhat --network mainnet ignition deploy --deployment-id ethereum-mainnet ignition/modules/AuctionMarket.ts",
-    "upgrade:auction": "hardhat run scripts/upgrade-auction-market.ts"
+    "deploy:payment-token": "hardhat run scripts/deploy-auction-payment-token.ts",
+    "upgrade:auction": "hardhat run scripts/upgrade-auction-market.ts",
+    "upgrade:auction:v3": "hardhat run scripts/upgrade-auction-market-v3.ts"
   },
   "keywords": [],
   "author": "",

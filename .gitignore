@@ -32,8 +32,15 @@ coverage/
 
 # env file
 .env
+config.local.yaml
+*.local.yaml
+logs/
 
 # Editor/IDE
 # .idea/
 # .vscode/
 nft-hardhat3-project/.env.example
+.playwright-mcp/
+docs/
+*.example
+.runtime-logs/

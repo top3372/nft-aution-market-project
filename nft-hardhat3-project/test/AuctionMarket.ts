@@ -20,10 +20,11 @@ describe("AuctionMarket", function () {
       8,
       TOKEN_USD_PRICE,
     ]);
-    const paymentToken = await ethers.deployContract("MockERC20", [
+    const paymentToken = await ethers.deployContract("AuctionPaymentToken", [
       "USD Test Token",
       "USDT",
       USD_TOKEN_DECIMALS,
+      owner.address,
     ]);
     const nft = await ethers.deployContract("AuctionNFT", [
       "Auction NFT",
@@ -101,6 +102,39 @@ describe("AuctionMarket", function () {
 
     const upgraded = await ethers.getContractAt(
       "AuctionMarketV2",
+      await market.getAddress(),
+    );
+
+    return {
+      ...fixture,
+      market: upgraded,
+    };
+  }
+
+  async function upgradeAuctionToV3() {
+    const fixture = await networkHelpers.loadFixture(createAuction);
+    const { owner, market, nft } = fixture;
+    const v2 = await ethers.deployContract("AuctionMarketV2");
+
+    await market
+      .connect(owner)
+      .upgradeToAndCall(await v2.getAddress(), "0x");
+
+    const v2Market = await ethers.getContractAt(
+      "AuctionMarketV2",
+      await market.getAddress(),
+    );
+    const v3 = await ethers.deployContract("AuctionMarketV3");
+    const initV3Data = v3.interface.encodeFunctionData("initializeV3", [
+      await nft.getAddress(),
+    ]);
+
+    await v2Market
+      .connect(owner)
+      .upgradeToAndCall(await v3.getAddress(), initV3Data);
+
+    const upgraded = await ethers.getContractAt(
+      "AuctionMarketV3",
       await market.getAddress(),
     );
 
@@ -210,11 +244,12 @@ describe("AuctionMarket", function () {
   });
 
   it("rejects bids with unsupported tokens", async function () {
-    const { alice, market } = await networkHelpers.loadFixture(createAuction);
-    const unsupportedToken = await ethers.deployContract("MockERC20", [
+    const { owner, alice, market } = await networkHelpers.loadFixture(createAuction);
+    const unsupportedToken = await ethers.deployContract("AuctionPaymentToken", [
       "Unsupported",
       "NOPE",
       18,
+      owner.address,
     ]);
 
     await unsupportedToken.mint(alice.address, ONE_ETH);
@@ -308,5 +343,102 @@ describe("AuctionMarket", function () {
     expect(await paymentToken.balanceOf(alice.address)).to.equal(
       feeRecipientBalanceBefore + feeAmount,
     );
+  });
+
+  it("upgrades to V3, initializes AuctionNFT, and keeps legacy auction state", async function () {
+    const { seller, nft, market } =
+      await networkHelpers.loadFixture(upgradeAuctionToV3);
+    const auction = await market.auctions(0n);
+
+    expect(await market.version()).to.equal("3.0.0");
+    expect(await market.auctionNft()).to.equal(await nft.getAddress());
+    expect(auction.seller).to.equal(seller.address);
+    expect(auction.nft).to.equal(await nft.getAddress());
+    expect(auction.tokenId).to.equal(0n);
+  });
+
+  it("creates a V3 scheduled auction for the configured AuctionNFT", async function () {
+    const { seller, nft, market } =
+      await networkHelpers.loadFixture(upgradeAuctionToV3);
+    const now = await networkHelpers.time.latest();
+    const startTime = BigInt(now + 60);
+    const endTime = BigInt(now + 3_600);
+    const startingPriceUsd = 100_00000000n;
+
+    await nft.safeMint(seller.address, "ipfs://auction-nft-v3");
+    await nft.connect(seller).approve(await market.getAddress(), 1n);
+
+    await expect(
+      market
+        .connect(seller)
+        .createAuctionV3(1n, startTime, endTime, startingPriceUsd),
+    )
+      .to.emit(market, "AuctionCreatedV3")
+      .withArgs(1n, seller.address, 1n, startTime, endTime, startingPriceUsd);
+
+    const extra = await market.auctionV3Extras(1n);
+    expect(extra.startTime).to.equal(startTime);
+    expect(extra.startingPriceUsd).to.equal(startingPriceUsd);
+    expect(extra.cancelled).to.equal(false);
+    expect(extra.v3Created).to.equal(true);
+    expect(
+      await market.nftToActiveAuctionIdPlusOne(await nft.getAddress(), 1n),
+    ).to.equal(2n);
+    expect(await nft.ownerOf(1n)).to.equal(await market.getAddress());
+  });
+
+  it("rejects V3 token bids before start time and below starting price", async function () {
+    const { seller, bob, nft, paymentToken, market } =
+      await networkHelpers.loadFixture(upgradeAuctionToV3);
+    const now = await networkHelpers.time.latest();
+    const startTime = BigInt(now + 60);
+    const endTime = BigInt(now + 3_600);
+
+    await nft.safeMint(seller.address, "ipfs://auction-nft-v3");
+    await nft.connect(seller).approve(await market.getAddress(), 1n);
+    await market
+      .connect(seller)
+      .createAuctionV3(1n, startTime, endTime, 500_00000000n);
+
+    await paymentToken
+      .connect(bob)
+      .approve(await market.getAddress(), 600_000000n);
+
+    await expect(
+      market
+        .connect(bob)
+        .bidWithToken(1n, await paymentToken.getAddress(), 600_000000n),
+    ).to.be.revertedWithCustomError(market, "AuctionNotStarted");
+
+    await networkHelpers.time.increaseTo(Number(startTime));
+
+    await expect(
+      market
+        .connect(bob)
+        .bidWithToken(1n, await paymentToken.getAddress(), 400_000000n),
+    ).to.be.revertedWithCustomError(market, "BidBelowStartingPrice");
+  });
+
+  it("lets the seller cancel a V3 auction before any bid", async function () {
+    const { seller, nft, market } =
+      await networkHelpers.loadFixture(upgradeAuctionToV3);
+    const now = await networkHelpers.time.latest();
+
+    await nft.safeMint(seller.address, "ipfs://auction-nft-v3");
+    await nft.connect(seller).approve(await market.getAddress(), 1n);
+    await market
+      .connect(seller)
+      .createAuctionV3(1n, BigInt(now), BigInt(now + 3_600), 100_00000000n);
+
+    await expect(market.connect(seller).cancelAuction(1n))
+      .to.emit(market, "AuctionCancelled")
+      .withArgs(1n, seller.address, 1n);
+
+    const extra = await market.auctionV3Extras(1n);
+    expect(extra.cancelled).to.equal(true);
+    expect(await nft.ownerOf(1n)).to.equal(seller.address);
+    expect(
+      await market.nftToActiveAuctionIdPlusOne(await nft.getAddress(), 1n),
+    ).to.equal(0n);
   });
 });

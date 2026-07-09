@@ -1,0 +1,6 @@
+{
+  "AuctionMarketModule#AuctionMarket": "0x1a55e5067C366A7202bb12BF4039C5f4bF8feb71",
+  "AuctionMarketModule#AuctionNFT": "0x7913Ff1EaA12887ed80a3D35c81c0033FFafadCe",
+  "AuctionMarketModule#AuctionMarketProxy": "0xBA9af325234368184A61be6081cdFB7f02dc6405",
+  "AuctionMarketModule#AuctionMarketProxyAsMarket": "0xBA9af325234368184A61be6081cdFB7f02dc6405"
+}

@@ -14,6 +14,9 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 /// 这里做一层项目本地包装，是为了让 Hardhat 为代理生成稳定 artifact，
 /// 测试和部署脚本可以像部署普通合约一样部署代理。
 contract AuctionMarketProxy is ERC1967Proxy {
+  /// @notice 部署代理并可选执行初始化调用。
+  /// @param implementation 初始实现合约地址，例如 AuctionMarket 或 AuctionMarketV3。
+  /// @param data 初始化 calldata，通常是 `initialize(initialOwner)` 的 ABI 编码。
   constructor(
     address implementation,
     bytes memory data

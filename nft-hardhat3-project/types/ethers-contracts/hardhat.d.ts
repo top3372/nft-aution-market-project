@@ -15,7 +15,8 @@ getContractFactory(name: 'AuctionMarketProxy', signerOrOptions?: ethers.Signer |
 getContractFactory(name: 'AuctionMarketV2', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.AuctionMarketV2__factory>
 getContractFactory(name: 'AuctionNFT', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.AuctionNFT__factory>
 getContractFactory(name: 'Counter', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Counter__factory>
-getContractFactory(name: 'MockERC20', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockERC20__factory>
+getContractFactory(name: 'AuctionPaymentToken', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.AuctionPaymentToken__factory>
+getContractFactory(name: 'AuctionMarketV3', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.AuctionMarketV3__factory>
 getContractFactory(name: 'MockV3Aggregator', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockV3Aggregator__factory>
 
   getContractAt(name: 'AuctionMarket', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.AuctionMarket>
@@ -23,7 +24,8 @@ getContractAt(name: 'AuctionMarketProxy', address: string | ethers.Addressable, 
 getContractAt(name: 'AuctionMarketV2', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.AuctionMarketV2>
 getContractAt(name: 'AuctionNFT', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.AuctionNFT>
 getContractAt(name: 'Counter', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Counter>
-getContractAt(name: 'MockERC20', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockERC20>
+getContractAt(name: 'AuctionPaymentToken', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.AuctionPaymentToken>
+getContractAt(name: 'AuctionMarketV3', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.AuctionMarketV3>
 getContractAt(name: 'MockV3Aggregator', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockV3Aggregator>
 
   deployContract(name: 'AuctionMarket', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionMarket>
@@ -31,7 +33,8 @@ deployContract(name: 'AuctionMarketProxy', signerOrOptions?: ethers.Signer | Dep
 deployContract(name: 'AuctionMarketV2', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionMarketV2>
 deployContract(name: 'AuctionNFT', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionNFT>
 deployContract(name: 'Counter', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Counter>
-deployContract(name: 'MockERC20', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockERC20>
+deployContract(name: 'AuctionPaymentToken', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionPaymentToken>
+deployContract(name: 'AuctionMarketV3', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionMarketV3>
 deployContract(name: 'MockV3Aggregator', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockV3Aggregator>
 
   deployContract(name: 'AuctionMarket', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionMarket>
@@ -39,7 +42,8 @@ deployContract(name: 'AuctionMarketProxy', args: any[], signerOrOptions?: ethers
 deployContract(name: 'AuctionMarketV2', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionMarketV2>
 deployContract(name: 'AuctionNFT', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionNFT>
 deployContract(name: 'Counter', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Counter>
-deployContract(name: 'MockERC20', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockERC20>
+deployContract(name: 'AuctionPaymentToken', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionPaymentToken>
+deployContract(name: 'AuctionMarketV3', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AuctionMarketV3>
 deployContract(name: 'MockV3Aggregator', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockV3Aggregator>
 
     // default types

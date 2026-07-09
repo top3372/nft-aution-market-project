@@ -11,7 +11,7 @@ contracts/
   AuctionMarket.sol                      UUPS 可升级拍卖市场
   AuctionMarketProxy.sol                 ERC1967/UUPS 代理包装合约
   AuctionMarketV2.sol                    升级测试用 V2 实现
-  mocks/MockERC20.sol                    测试用 ERC20
+  AuctionPaymentToken.sol                正式 ERC20 支付代币
   mocks/MockV3Aggregator.sol             测试用价格源
 ignition/modules/
   AuctionMarket.ts                       NFT + 拍卖市场代理部署模块
@@ -255,5 +255,6 @@ npm run upgrade:auction -- --network localhost
 AuctionNFT:
 AuctionMarket implementation:
 AuctionMarket proxy:
+AuctionPaymentToken: 0xBE3c38a1015b4B4dacfd13C5346F1Ee907D8c283
 ```
 

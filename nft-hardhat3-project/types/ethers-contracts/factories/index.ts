@@ -5,5 +5,7 @@ export * as mocks from './mocks/index.js';
 export { AuctionMarket__factory } from './AuctionMarket__factory.js';
 export { AuctionMarketProxy__factory } from './AuctionMarketProxy__factory.js';
 export { AuctionMarketV2__factory } from './AuctionMarketV2__factory.js';
+export { AuctionMarketV3__factory } from './AuctionMarketV3__factory.js';
 export { AuctionNFT__factory } from './AuctionNFT__factory.js';
+export { AuctionPaymentToken__factory } from './AuctionPaymentToken__factory.js';
 export { Counter__factory } from './Counter__factory.js';

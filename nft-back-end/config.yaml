@@ -1,0 +1,63 @@
+# NFT 拍卖后端配置。三个进程 cmd/api、cmd/indexer、cmd/worker 共用本文件。
+# 部署环境可以通过 CONFIG_FILE 指定其他 YAML 文件，也可以用环境变量覆盖任意配置项。
+
+app:
+  env: local
+
+http:
+  addr: ":8080"
+  # 本地前端开发地址。部署到服务器时把正式前端域名追加到这里。
+  cors_allowed_origins:
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"
+
+database:
+  # MySQL 5.7 连接串。业务表结构见 migrations/001_init_mysql57.sql。
+  mysql_dsn: "root:Passw0rd@tcp(10.30.102.21:53306)/nft?parseTime=true&charset=utf8mb4&loc=Local"
+
+redis:
+  # 第一版默认不启用，后续可用于缓存、队列或分布式锁。
+  enabled: false
+  addr: "127.0.0.1:6379"
+  password: ""
+  db: 0
+
+chain:
+  network_name: sepolia
+  chain_id: 11155111
+  rpc_url: "https://ethereum-sepolia-rpc.publicnode.com"
+  block_explorer_url: "https://sepolia.etherscan.io"
+
+contracts:
+  # 市场地址必须填写 AuctionMarket UUPS 代理地址；后端 indexer 只监听代理地址发出的事件。
+  market_address: "0xBA9af325234368184A61be6081cdFB7f02dc6405"
+  # 本期允许创建拍卖的 NFT 合约地址。
+  auction_nft_address: "0x7913Ff1EaA12887ed80a3D35c81c0033FFafadCe"
+  # V3 出价使用的 AuctionPaymentToken ERC20 地址，需要和链上白名单配置一致。
+  payment_token_address: "0xBE3c38a1015b4B4dacfd13C5346F1Ee907D8c283"
+  # V3 implementation: 0xb66F7BE4345C64e1f846D1AFE56196A24C85e58D
+  # V3 upgrade tx: 0xcdb3e8d5381f1162da5c543759cf48dfffcf8a41ada64549ce7fe966e3b9c2a1
+
+indexer:
+  start_block: 11222876
+  batch_size: 1000
+  poll_interval: 10s
+  # Sepolia 上等待 6 个确认后再处理事件，降低短 reorg 导致查询表错误的概率。
+  confirmations: 6
+  # 每个合约 source 都有独立游标：市场、NFT、支付代币可以分别回放和排错。
+  contracts:
+    - name: market
+      event_group: market
+      address: "0xBA9af325234368184A61be6081cdFB7f02dc6405"
+      abi: auction_market_v3
+      start_block: 11222876
+    - name: auction_nft
+      event_group: auction_nft
+      address: "0x7913Ff1EaA12887ed80a3D35c81c0033FFafadCe"
+      abi: auction_nft
+      start_block: 11222876
+    - name: payment_token
+      event_group: payment_token
+      address: "0xBE3c38a1015b4B4dacfd13C5346F1Ee907D8c283"
+      abi: erc20
+      start_block: 11222876

@@ -25,10 +25,10 @@ my-hardhat3-projet/
     AuctionMarket.sol
     AuctionMarketProxy.sol
     AuctionMarketV2.sol
+    AuctionPaymentToken.sol
     interfaces/
       AggregatorV3Interface.sol
     mocks/
-      MockERC20.sol
       MockV3Aggregator.sol
     Counter.sol
     Counter.t.sol
@@ -48,9 +48,9 @@ my-hardhat3-projet/
 
 | 目录或文件 | 作用 |
 | --- | --- |
-| `contracts/` | Solidity 合约源码。主业务合约、代理合约、mock 合约都在这里。 |
+| `contracts/` | Solidity 合约源码。主业务合约、代理合约、支付代币和测试价格源都在这里。 |
 | `contracts/interfaces/` | Solidity 接口定义。这里放 Chainlink Price Feed 兼容接口。 |
-| `contracts/mocks/` | 测试专用合约，用于模拟 ERC20 和价格预言机。 |
+| `contracts/mocks/` | 测试专用合约，用于模拟价格预言机。 |
 | `test/` | TypeScript 集成测试，使用 Hardhat 3 + ethers + Mocha。 |
 | `ignition/modules/` | Hardhat Ignition 部署模块。 |
 | `hardhat.config.ts` | Hardhat 配置，包括 Solidity 版本、网络、插件。 |
@@ -67,7 +67,7 @@ flowchart TD
   A["1. README.md\n先知道项目能做什么"] --> B["2. package.json / hardhat.config.ts\n理解 Hardhat 怎么编译、测试、部署"]
   B --> C["3. AuctionNFT.sol\n先看最简单的 ERC721 合约"]
   C --> D["4. AggregatorV3Interface.sol\n理解价格源接口"]
-  D --> E["5. mocks/MockERC20.sol\n理解 ERC20 测试币"]
+  D --> E["5. AuctionPaymentToken.sol\n理解 ERC20 支付币"]
   E --> F["6. mocks/MockV3Aggregator.sol\n理解测试价格源"]
   F --> G["7. AuctionMarket.sol\n看核心拍卖业务"]
   G --> H["8. AuctionMarketProxy.sol\n理解代理合约"]
@@ -133,16 +133,16 @@ _setTokenURI      保存 NFT 元数据地址
 
 理解这个接口后，再看市场合约里的 `quoteBidUsd` 会更容易。
 
-### 3.5 第五步：看 mocks 目录
+### 3.5 第五步：看支付代币和 mocks 目录
 
-再看两个测试合约：
+再看支付代币和测试价格源：
 
 | 文件 | 作用 |
 | --- | --- |
-| `MockERC20.sol` | 模拟 ERC20 支付 token，测试 ERC20 出价。 |
+| `AuctionPaymentToken.sol` | 正式 ERC20 支付 token，owner 才能 mint。 |
 | `MockV3Aggregator.sol` | 模拟 Chainlink 价格源，测试 USD 换算。 |
 
-mock 合约不是生产功能，而是为了测试。它们让测试可以控制余额和价格，避免依赖真实链上资产。
+`AuctionPaymentToken` 是当前 Sepolia 启用的支付币；`MockV3Aggregator` 只用于测试和演示价格源。
 
 ### 3.6 第六步：再看 AuctionMarket.sol
 
@@ -430,15 +430,15 @@ uint16 public platformFeeBps;
 - 原来的拍卖状态仍然保留。
 - 升级后可以配置手续费，并在结算时把成交金额拆成平台手续费和卖家净收入。
 
-### 5.6 MockERC20.sol 和 MockV3Aggregator.sol
+### 5.6 AuctionPaymentToken.sol 和 MockV3Aggregator.sol
 
-这两个合约只用于测试。
+这两个合约共同支撑 ERC20 出价测试。
 
-`MockERC20`：
+`AuctionPaymentToken`：
 
-- 模拟 USDT 等 ERC20。
+- 模拟稳定币类支付资产。
 - 可以指定 decimals。
-- 提供开放 `mint`，方便测试给用户发币。
+- 只有 owner 可以 `mint`，和当前 Sepolia 正式支付币权限一致。
 
 `MockV3Aggregator`：
 
@@ -742,7 +742,7 @@ await networkHelpers.time.increase(3_601);
 
 - ETH/USD mock feed。
 - ERC20/USD mock feed。
-- MockERC20。
+- AuctionPaymentToken。
 - AuctionNFT。
 - AuctionMarket implementation。
 - AuctionMarketProxy。

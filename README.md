@@ -103,9 +103,12 @@ npm run build
 - 工程总览与学习教程：`docs/NFT_AUCTION_ENGINEERING_TUTORIAL.md`
 - 命令执行、编译启动时机与 go:embed：`docs/COMMANDS_COMPILE_STARTUP_AND_GO_EMBED.md`
 - 业务链路与 ERC20 支付代币：`docs/NFT_AUCTION_BUSINESS_FLOW_AND_PAYMENT_TOKEN.md`
+- 项目深度业务分析：`docs/NFT_AUCTION_PROJECT_DEEP_ANALYSIS.md`
 - NFT 创建与拍卖操作：`docs/NFT_MINT_AND_AUCTION_OPERATION_GUIDE.md`
 - ETH 主网兑换与 AUSD 发行量：`docs/ETH_MAINNET_TOKEN_EXCHANGE_AND_SUPPLY.md`
 - EVM 索引服务框架：`docs/EVM_INDEXER_FRAMEWORK_DESIGN.md`
+- Indexer 架构与 Reorg 对比：`docs/INDEXER_ARCHITECTURE_AND_REORG_COMPARISON.md`
+- Ponder 索引服务设计与开发计划：`docs/PONDER_INDEXER_DESIGN_AND_DEVELOPMENT_PLAN.md`
 - 合约文档：`nft-hardhat3-project/docs/AUCTION_MARKET_V3_GUIDE.md`
 - 正式支付代币文档：`nft-hardhat3-project/docs/AUCTION_PAYMENT_TOKEN_GUIDE.md`
 - 后端文档：`nft-back-end/docs/BACKEND_CODE_GUIDE.md`

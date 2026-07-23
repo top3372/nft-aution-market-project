@@ -44,3 +44,4 @@ nft-hardhat3-project/.env.example
 docs/
 *.example
 .runtime-logs/
+.codegraph/
